@@ -4,21 +4,29 @@ import { AppService } from './app.service';
 import { ConversationModule } from './conversation/conversation.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
+import { ChatModule } from './chat/chat.module';
+import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
+import { User } from './user/entities/user.entity';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    // TypeOrmModule.forRoot({
-    //   type: 'mysql', // or postgres, sqlite, etc.
-    //   host: 'localhost',
-    //   port: 3306,
-    //   username: 'root',
-    //   password: 'password',
-    //   database: 'mydb',
-    //   autoLoadEntities: true,
-    //   synchronize: true, // Disable this in production!
-    // }),
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      username: process.env.DB_USER,
+      password: process.env.DB_PASS,
+      database: process.env.DB_NAME,
+      autoLoadEntities: true,
+      synchronize: true, // Disable this in production!
+    }),
+    TypeOrmModule.forFeature([User]),
     ConversationModule,
+    ChatModule,
+    AuthModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
