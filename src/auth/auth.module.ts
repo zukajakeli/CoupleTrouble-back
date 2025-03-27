@@ -8,6 +8,9 @@ import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { User } from 'src/user/entities/user.entity';
+import { ChatService } from 'src/chat/chat.service';
+import { ChatModule } from 'src/chat/chat.module';
+import { LocalStrategy } from './local.strategy';
 
 dotenv.config();
 
@@ -16,12 +19,14 @@ dotenv.config();
     TypeOrmModule.forFeature([User]),
     PassportModule,
     JwtModule.register({
+      global: true,
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1h' },
     }),
+    ChatModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, ChatService, LocalStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

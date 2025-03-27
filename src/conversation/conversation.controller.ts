@@ -17,7 +17,6 @@ export class ConversationController {
 
   @Post('/analyze')
   send(@Body() createConversationDto: CreateConversationDto) {
-    console.log('came');
     return this.conversationService.sendToAI(createConversationDto.inputText);
   }
 

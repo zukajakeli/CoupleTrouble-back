@@ -1,19 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { StreamChat } from 'stream-chat';
+import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
 
 @Injectable()
 export class ChatService {
-  private chatClient: StreamChat;
+  public chatClient: StreamChat;
+  public genAI: GoogleGenerativeAI;
+  public aiModel: GenerativeModel;
 
   constructor() {
     const apiKey = process.env.STREAM_API_KEY;
     const apiSecret = process.env.STREAM_API_SECRET;
+    const genAIKey = process.env.GEMINI_API_KEY;
 
-    if (!apiKey || !apiSecret) {
+    if (!apiKey || !apiSecret || !genAIKey) {
       throw new Error('Stream API credentials not found');
     }
 
     this.chatClient = StreamChat.getInstance(apiKey, apiSecret);
+    this.genAI = new GoogleGenerativeAI(genAIKey);
+    this.aiModel = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
   }
 
   getStreamClient(): StreamChat {
@@ -24,9 +30,11 @@ export class ChatService {
     return this.chatClient.createToken(userId);
   }
 
-  async createUser(userId: string, userData: any): Promise<any> {
+  async createUser(id: string, userData: any): Promise<any> {
+    userData.id = userData.id.toString();
+
     return this.chatClient.upsertUser({
-      id: userId,
+      id: id,
       ...userData,
     });
   }
@@ -37,12 +45,79 @@ export class ChatService {
     members: string[],
     data?: any,
   ): Promise<any> {
+    console.log({ members });
+
     const channel = this.chatClient.channel(channelType, channelId, {
+      // members,
       members,
+      created_by_id: members[0],
       ...data,
     });
 
-    await channel.create();
-    return channel;
+    const chan = await channel.create();
+
+    return chan;
+  }
+
+  async searchUsers(query: string, currentUserId: string) {
+    try {
+      console.log('query', query);
+      console.log('currentUserId', currentUserId);
+
+      const response = await this.chatClient.queryUsers(
+        {
+          id: { $ne: currentUserId }, // Exclude current user
+          $or: [
+            { name: { $autocomplete: query } },
+            { id: { $autocomplete: query } },
+          ],
+        },
+        { name: 1 },
+      );
+
+      return response.users;
+    } catch (error) {
+      console.error('Error searching users:', error);
+      throw error;
+    }
+  }
+
+  async sendAIMessage(channelId: string, text: string) {
+    try {
+      const channel = this.chatClient.channel('messaging', channelId);
+      await channel.sendMessage({
+        text,
+        user_id: 'ai_agent',
+      });
+    } catch (error) {
+      console.error('Error sending AI message:', error);
+    }
+  }
+
+  async verifyWebhook(payload: any, signature: string): Promise<boolean> {
+    return this.chatClient.verifyWebhook(payload, signature);
+  }
+
+  async generateAIResponse(userMessage: string): Promise<string> {
+    try {
+      const res = await this.aiModel.generateContent(prompt + userMessage);
+
+      return res.response.text() || 'I am here to help!';
+    } catch (error) {
+      console.error('AI Response Error:', error);
+      return 'Sorry, I am having trouble responding.';
+    }
+  }
+
+  async createAIUser() {
+    await this.chatClient.upsertUser({
+      id: 'ai_agent',
+      name: 'Guru',
+      role: 'admin',
+    });
+  }
+
+  onModuleInit() {
+    this.createAIUser(); // Register AI Agent when the module loads
   }
 }

@@ -9,11 +9,13 @@ import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ChatService } from 'src/chat/chat.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private jwtService: JwtService,
+    private chatService: ChatService,
     @InjectRepository(User) private usersRepo: Repository<User>,
   ) {}
 
@@ -27,7 +29,6 @@ export class AuthService {
     if (existingUser) {
       throw new ConflictException('Email already in use');
     }
-    console.log({ password });
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const user = this.usersRepo.create({
@@ -42,19 +43,24 @@ export class AuthService {
   }
 
   async login(user: User) {
-    const payload = { email: user.email, sub: user.id, role: user.role };
-    console.log('login', payload);
+    const payload = {
+      email: user.email,
+      id: `${user.name}${user.id}`,
+      role: user.role,
+      first_name: user.name,
+    };
+
+    await this.chatService.createUser(user.id.toString(), payload);
 
     return {
       access_token: this.jwtService.sign(payload),
+      user: payload,
     };
   }
 
   async validateUser(email: string, password: string): Promise<User> {
     const user = await this.usersRepo.findOne({ where: { email } });
 
-    const test = await bcrypt.compare(password, user?.password);
-    console.log({ user, email, password, test });
     if (user && (await bcrypt.compare(password, user.password))) {
       const { password, ...result } = user;
       return user;
