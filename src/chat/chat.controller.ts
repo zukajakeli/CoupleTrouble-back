@@ -5,7 +5,9 @@ import {
   Headers,
   Post,
   Query,
+  RawBodyRequest,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
@@ -16,6 +18,7 @@ import { User as UserEntity } from 'src/user/entities/user.entity';
 import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateChannelDto } from './dto/create-channel.dto';
+import { Request, Response } from 'express';
 
 @ApiTags('Chat')
 @Controller('chat')
@@ -89,30 +92,48 @@ export class ChatController {
   async handleMessage(
     @Body() body: any,
     @Headers('stream-signature') signature: string,
-    @Req() req: any,
+    @Req() req: RawBodyRequest<Request>,
+    @Res() res: Response,
   ) {
-    console.log('Received Webhook 1111111');
-
-    const streamSignature = req.headers['x-stream-signature'];
-
-    // Verify webhook signature
-    const isValid = await this.chatService.verifyWebhook(body, streamSignature);
-    if (!isValid) return { status: 'unauthorized' };
-
     console.log('Received Webhook:', body);
-    // Extract message details
-    const { type, message } = body;
-    if (type !== 'message.new' || message.user.id === 'ai_agent') return;
+    console.log('Signature:', signature);
+    console.log('body:', body);
 
-    const channelId = message.cid;
-    const userMessage = message.text;
+    const rawBody = req.rawBody;
+    if (!rawBody) {
+      console.log('Raw body not available');
+      return res.status(400).send('Raw body not available');
+    }
 
-    // Generate AI response
-    const aiResponse = await this.chatService.generateAIResponse(userMessage);
+    const streamSignature = req.headers['x-stream-signature'] as string;
 
-    // Send AI response to the chat
-    await this.chatService.sendAIMessage(channelId, aiResponse);
+    try {
+      // Verify webhook signature
+      const isValid = await this.chatService.verifyWebhook(
+        rawBody,
+        streamSignature,
+      );
+      if (!isValid) return { status: 'unauthorized' };
+      console.log('11111');
+      console.log('Received Webhook:', body);
+      console.log('Signature:', signature);
+      console.log('body:', body);
+      // Extract message details
+      const { type, message } = body;
+      if (type !== 'message.new' || message.user.id === 'ai_agent') return;
 
-    return { status: 'ok' };
+      const channelId = message.cid;
+      const userMessage = message.text;
+
+      // Generate AI response
+      const aiResponse = await this.chatService.generateAIResponse(userMessage);
+
+      // Send AI response to the chat
+      await this.chatService.sendAIMessage(channelId, aiResponse);
+      return res.status(200).send('Webhook processed successfully');
+    } catch (error) {
+      console.error('Webhook processing error:', error);
+      return res.status(500).send('Error processing webhook');
+    }
   }
 }
