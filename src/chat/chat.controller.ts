@@ -113,17 +113,26 @@ export class ChatController {
         JSON.stringify(body),
         signature,
       );
+      console.log('isValid:', isValid);
       if (!isValid) return { status: 'unauthorized' };
       console.log('11111');
       // Extract message details
       const { type, message } = body;
       if (type !== 'message.new' || message.user.id === 'ai_agent') return;
 
+      console.log('type', type);
+      console.log('userId', message.user.id);
+
       const channelId = message.cid;
       const userMessage = message.text;
 
+      console.log('channelId:', channelId);
+      console.log('userMessage:', userMessage);
+
       // Generate AI response
       const aiResponse = await this.chatService.generateAIResponse(userMessage);
+
+      console.log('aiResponse:', aiResponse);
 
       // Send AI response to the chat
       await this.chatService.sendAIMessage(channelId, aiResponse);
