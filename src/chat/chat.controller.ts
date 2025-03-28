@@ -99,10 +99,15 @@ export class ChatController {
     console.log('Signature:', signature);
     console.log('body:', body);
 
-    const rawBody = req.rawBody;
-    if (!rawBody) {
-      console.log('Raw body not available');
-      return res.status(400).send('Raw body not available');
+    // const rawBody = req.rawBody;
+    // if (!rawBody) {
+    //   console.log('Raw body not available');
+    //   return res.status(400).send('Raw body not available');
+    // }
+
+    if (!body) {
+      console.log(' body not available');
+      return res.status(400).send(' body not available');
     }
 
     const streamSignature = req.headers['x-stream-signature'] as string;
@@ -110,14 +115,11 @@ export class ChatController {
     try {
       // Verify webhook signature
       const isValid = await this.chatService.verifyWebhook(
-        rawBody,
+        body,
         streamSignature,
       );
       if (!isValid) return { status: 'unauthorized' };
       console.log('11111');
-      console.log('Received Webhook:', body);
-      console.log('Signature:', signature);
-      console.log('body:', body);
       // Extract message details
       const { type, message } = body;
       if (type !== 'message.new' || message.user.id === 'ai_agent') return;
