@@ -113,7 +113,7 @@ export class ChatController {
       // if (!isValid) return { status: 'unauthorized' };
 
       // Extract message details
-      const { type, message, channelId } = body;
+      const { type, message, channel_id } = body;
       if (type !== 'message.new' || message.user.id === 'ai_agent') return;
 
       // const channelId = body.channel_id;
@@ -126,7 +126,7 @@ export class ChatController {
         console.log('userId', message.user.id);
         console.log('isValid:', isValid);
 
-        console.log('channelId:', channelId);
+        console.log('channelId:', channel_id);
         console.log('userMessage:', userMessage);
       }
 
@@ -136,7 +136,7 @@ export class ChatController {
       console.log('aiResponse:', aiResponse);
 
       // Send AI response to the chat
-      await this.chatService.sendAIMessage(channelId, aiResponse);
+      await this.chatService.sendAIMessage(channel_id, aiResponse);
       return res.status(200).send('Webhook processed successfully');
     } catch (error) {
       console.error('Webhook processing error:', error);
