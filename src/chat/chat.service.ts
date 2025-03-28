@@ -102,6 +102,9 @@ export class ChatService {
   }
 
   async generateAIResponse(userMessage: string): Promise<string> {
+    const prompt =
+      'You are in a group chat with 2 other people, who are couple. Pretend you are the couples relationship guru. Be very professional, but also very kind and warm, really try to help the couple. : ';
+
     try {
       const res = await this.aiModel.generateContent(prompt + userMessage);
 
