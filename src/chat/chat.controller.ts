@@ -116,10 +116,10 @@ export class ChatController {
       const { type, message } = body;
       if (type !== 'message.new' || message.user.id === 'ai_agent') return;
 
-      const channelId = message.id;
+      const channelId = message.cid;
       const userMessage = message.text;
 
-      if (type !== 'message.new') {
+      if (type == 'message.new') {
         console.log('Signature:', signature);
         console.log('body:', body);
 
