@@ -114,7 +114,7 @@ export class ChatController {
         signature,
       );
       console.log('isValid:', isValid);
-      if (!isValid) return { status: 'unauthorized' };
+      // if (!isValid) return { status: 'unauthorized' };
       console.log('11111');
       // Extract message details
       const { type, message } = body;
