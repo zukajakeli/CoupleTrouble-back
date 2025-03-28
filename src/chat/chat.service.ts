@@ -94,7 +94,10 @@ export class ChatService {
     }
   }
 
-  async verifyWebhook(payload: any, signature: string): Promise<boolean> {
+  async verifyWebhook(
+    payload: string | Buffer,
+    signature: string,
+  ): Promise<boolean> {
     return this.chatClient.verifyWebhook(payload, signature);
   }
 
