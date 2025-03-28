@@ -91,13 +91,13 @@ export class ChatController {
   @Post('webhook')
   async handleMessage(
     @Body() body: any,
-    @Headers('stream-signature') signature: string,
+    @Headers('x-signature') signature: string,
     @Req() req: RawBodyRequest<Request>,
     @Res() res: Response,
   ) {
     console.log('Signature:', signature);
     console.log('body:', body);
-    console.log('header', req.headers);
+    // console.log('header', req.headers);
 
     // const rawBody = req.rawBody;
     // if (!rawBody) {
@@ -110,14 +110,9 @@ export class ChatController {
       return res.status(400).send(' body not available');
     }
 
-    const streamSignature = req.headers['x-stream-signature'] as string;
-
     try {
       // Verify webhook signature
-      const isValid = await this.chatService.verifyWebhook(
-        body,
-        streamSignature,
-      );
+      const isValid = await this.chatService.verifyWebhook(body, signature);
       if (!isValid) return { status: 'unauthorized' };
       console.log('11111');
       // Extract message details
