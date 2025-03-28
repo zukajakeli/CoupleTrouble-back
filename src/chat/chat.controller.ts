@@ -113,10 +113,10 @@ export class ChatController {
       // if (!isValid) return { status: 'unauthorized' };
 
       // Extract message details
-      const { type, message } = body;
+      const { type, message, channelId } = body;
       if (type !== 'message.new' || message.user.id === 'ai_agent') return;
 
-      const channelId = message.cid;
+      // const channelId = body.channel_id;
       const userMessage = message.text;
 
       if (type == 'message.new') {
