@@ -95,9 +95,9 @@ export class ChatController {
     @Req() req: RawBodyRequest<Request>,
     @Res() res: Response,
   ) {
-    console.log('Received Webhook:', body);
     console.log('Signature:', signature);
     console.log('body:', body);
+    console.log('header', req.headers);
 
     // const rawBody = req.rawBody;
     // if (!rawBody) {
