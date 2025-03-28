@@ -87,13 +87,17 @@ export class ChatController {
   async handleMessage(
     @Body() body: any,
     @Headers('stream-signature') signature: string,
+    @Req() req: any,
   ) {
+    console.log('Received Webhook 1111111');
+
+    const streamSignature = req.headers['x-stream-signature'];
+
     // Verify webhook signature
-    const isValid = await this.chatService.verifyWebhook(body, signature);
+    const isValid = await this.chatService.verifyWebhook(body, streamSignature);
     if (!isValid) return { status: 'unauthorized' };
 
     console.log('Received Webhook:', body);
-
     // Extract message details
     const { type, message } = body;
     if (type !== 'message.new' || message.user.id === 'ai_agent') return;
