@@ -17,7 +17,6 @@ import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateChannelDto } from './dto/create-channel.dto';
 
-@UseGuards(JwtAuthGuard)
 @ApiTags('Chat')
 @Controller('chat')
 export class ChatController {
@@ -26,6 +25,7 @@ export class ChatController {
     private aiService: AiService,
   ) {}
 
+  @UseGuards(JwtAuthGuard)
   @Post('create-ai-user')
   async createAiUser() {
     return this.chatService.createUser('ai-assistant', {
@@ -59,11 +59,12 @@ export class ChatController {
   //   }
   // }
 
+  @UseGuards(JwtAuthGuard)
   @Get('token')
   async generateToken(@User() user: UserEntity) {
     return this.chatService.createToken(user.id.toString());
   }
-
+  @UseGuards(JwtAuthGuard)
   @Post('channel')
   async createChannel(@Body() body: CreateChannelDto) {
     const { channelType, channelId, members, data } = body;
@@ -75,6 +76,7 @@ export class ChatController {
     );
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('users/search')
   async searchUsers(
     @Query('query') query: string,
