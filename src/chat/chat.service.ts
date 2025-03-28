@@ -1,12 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { StreamChat } from 'stream-chat';
-import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
+import {
+  GenerativeModel,
+  GoogleGenerativeAI,
+  ChatSession,
+} from '@google/generative-ai';
 
 @Injectable()
 export class ChatService {
   public chatClient: StreamChat;
   public genAI: GoogleGenerativeAI;
   public aiModel: GenerativeModel;
+  private chatSession: ChatSession;
 
   constructor() {
     const apiKey = process.env.STREAM_API_KEY;
@@ -19,7 +24,19 @@ export class ChatService {
 
     this.chatClient = StreamChat.getInstance(apiKey, apiSecret);
     this.genAI = new GoogleGenerativeAI(genAIKey);
-    this.aiModel = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    this.aiModel = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    this.chatSession = this.aiModel.startChat({
+      history: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: 'You are a wise guru who provides deep, spiritual, and philosophical guidance.',
+            },
+          ],
+        },
+      ],
+    });
   }
 
   getStreamClient(): StreamChat {
@@ -106,7 +123,8 @@ export class ChatService {
       'You are in a group chat with 2 other people, who are couple. Pretend you are the couples relationship guru. Be very professional, but also very kind and warm, really try to help the couple. : ';
 
     try {
-      const res = await this.aiModel.generateContent(prompt + userMessage);
+      // const res = await this.aiModel.generateContent(prompt + userMessage);
+      const res = await this.chatSession.sendMessage(userMessage);
 
       return res.response.text() || 'I am here to help!';
     } catch (error) {
