@@ -118,6 +118,7 @@ export class ChatController {
 
       // const channelId = body.channel_id;
       const userMessage = message.text;
+      const userName = message.user.first_name || message.user.id;
 
       if (type == 'message.new') {
         console.log('Signature:', signature);
@@ -131,7 +132,10 @@ export class ChatController {
       }
 
       // Generate AI response
-      const aiResponse = await this.chatService.generateAIResponse(userMessage);
+      const aiResponse = await this.chatService.generateAIResponse(
+        userName,
+        userMessage,
+      );
 
       console.log('aiResponse:', aiResponse);
 
