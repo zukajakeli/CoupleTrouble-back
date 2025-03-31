@@ -56,16 +56,12 @@ export class ChatService {
     });
   }
 
-  async createChannel(
-    channelType: string,
-    channelId: string,
-    members: string[],
-    data?: any,
-  ): Promise<any> {
-    console.log({ members });
+  async createChannel(members: string[], data?: any): Promise<any> {
+    const channelType = 'messaging';
+    const maxIdLength = 64;
+    const channelId = Date.now().toString().substring(0, maxIdLength);
 
     const channel = this.chatClient.channel(channelType, channelId, {
-      // members,
       members,
       created_by_id: members[0],
       ...data,

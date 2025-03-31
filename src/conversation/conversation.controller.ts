@@ -6,18 +6,37 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
 } from '@nestjs/common';
 import { ConversationService } from './conversation.service';
 import { CreateConversationDto } from './dto/create-conversation.dto';
 import { UpdateConversationDto } from './dto/update-conversation.dto';
+import { User } from 'src/auth/guards/user.decorator';
+import { User as UserEntity } from 'src/user/entities/user.entity';
+import { ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
 
+@UseGuards(JwtAuthGuard)
+@ApiTags('Conversations')
 @Controller('conversation')
 export class ConversationController {
   constructor(private readonly conversationService: ConversationService) {}
 
   @Post('/analyze')
-  send(@Body() createConversationDto: CreateConversationDto) {
-    return this.conversationService.sendToAI(createConversationDto.inputText);
+  send(
+    @User() user: UserEntity,
+    @Body() createConversationDto: CreateConversationDto,
+  ) {
+    return this.conversationService.analyzeConversation(
+      user.id.toString(),
+      createConversationDto.inputText,
+      createConversationDto.source,
+    );
+  }
+
+  @Get()
+  getByUser(@User() user: UserEntity) {
+    return this.conversationService.getConversationByUser(user.id.toString());
   }
 
   @Post()
@@ -45,6 +64,6 @@ export class ConversationController {
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.conversationService.remove(+id);
+    return this.conversationService.remove(id);
   }
 }
