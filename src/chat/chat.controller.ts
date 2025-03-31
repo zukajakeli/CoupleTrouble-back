@@ -37,31 +37,6 @@ export class ChatController {
     });
   }
 
-  // @Post('webhook')
-  // async handleWebhook(@Body() body: any) {
-  //   // Process Stream Chat webhook
-  //   if (body.type === 'message.new') {
-  //     const message = body.message;
-  //     const channel = body.channel;
-
-  //     // Don't respond to AI's own messages
-  //     if (message.user.id === 'ai-assistant') return;
-
-  //     const aiResponse = await this.aiService.generateResponse(message.text);
-
-  //     // Send AI response to the channel
-  //     const channelInstance = this.chatService.chatClient.channel(
-  //       channel.type,
-  //       channel.id,
-  //     );
-
-  //     await channelInstance.sendMessage({
-  //       text: aiResponse,
-  //       user_id: 'ai-assistant',
-  //     });
-  //   }
-  // }
-
   @UseGuards(JwtAuthGuard)
   @Get('token')
   async generateToken(@User() user: UserEntity) {
@@ -70,13 +45,8 @@ export class ChatController {
   @UseGuards(JwtAuthGuard)
   @Post('channel')
   async createChannel(@Body() body: CreateChannelDto) {
-    const { channelType, channelId, members, data } = body;
-    return this.chatService.createChannel(
-      channelType,
-      channelId,
-      members,
-      data,
-    );
+    const { members, data } = body;
+    return this.chatService.createChannel(members, data);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -131,7 +101,6 @@ export class ChatController {
         console.log('userMessage:', userMessage);
       }
 
-      // Generate AI response
       const aiResponse = await this.chatService.generateAIResponse(
         userName,
         userMessage,
