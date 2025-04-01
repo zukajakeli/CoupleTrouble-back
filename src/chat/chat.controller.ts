@@ -19,6 +19,7 @@ import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateChannelDto } from './dto/create-channel.dto';
 import { Request, Response } from 'express';
+import { TriggerGuruDto } from './dto/trigger-guru.dto';
 
 @ApiTags('Chat')
 @Controller('chat')
@@ -84,36 +85,77 @@ export class ChatController {
 
       // Extract message details
       const { type, message, channel_id } = body;
-      if (type !== 'message.new' || message.user.id === 'ai_agent') return;
+      if (type !== 'message.new' || message?.user?.id === 'ai_agent') {
+         console.log(`Webhook received, but not processing message type: ${type} from user: ${message?.user?.id}`);
+         // Still return 200 OK to acknowledge webhook receipt
+         return res.status(200).send('Webhook acknowledged, no AI action needed.');
+      }
 
       // const channelId = body.channel_id;
       const userMessage = message.text;
       const userName = message.user.first_name || message.user.id;
 
-      if (type == 'message.new') {
-        console.log('Signature:', signature);
-        console.log('body:', body);
+      // --- AI RESPONSE TRIGGERED VIA WEBHOOK (DISABLED) ---
+      // console.log('Webhook processing message from:', userName);
+      // console.log('Channel ID:', channel_id);
+      // console.log('User Message:', userMessage);
 
-        console.log('userId', message.user.id);
-        console.log('isValid:', isValid);
+      // // Generate AI response based on the new message
+      // const aiResponse = await this.chatService.generateAIResponse(
+      //   userName,
+      //   userMessage,
+      // );
+      // console.log('aiResponse:', aiResponse);
 
-        console.log('channelId:', channel_id);
-        console.log('userMessage:', userMessage);
-      }
+      // // Send AI response to the chat
+      // await this.chatService.sendAIMessage(channel_id, aiResponse);
+      // --- END DISABLED AI RESPONSE ---
 
-      const aiResponse = await this.chatService.generateAIResponse(
-        userName,
-        userMessage,
-      );
+      // Acknowledge webhook receipt without triggering AI
+      console.log(`Webhook processed for message from ${userName} in channel ${channel_id}, AI not triggered.`);
+      return res.status(200).send('Webhook processed, AI response not triggered automatically.');
 
-      console.log('aiResponse:', aiResponse);
-
-      // Send AI response to the chat
-      await this.chatService.sendAIMessage(channel_id, aiResponse);
-      return res.status(200).send('Webhook processed successfully');
     } catch (error) {
       console.error('Webhook processing error:', error);
       return res.status(500).send('Error processing webhook');
+    }
+  }
+
+  // New endpoint to trigger the Guru response manually
+  @UseGuards(JwtAuthGuard) // Ensure user is authenticated
+  @Post('trigger-guru')
+  async triggerGuru(
+    @Body() triggerGuruDto: TriggerGuruDto, // Use a DTO for request body validation
+    @Res() res: Response,
+  ) {
+    const { channelId } = triggerGuruDto;
+    console.log(`Guru trigger received for channel: ${channelId}`);
+
+    if (!channelId) {
+      return res.status(400).send('Channel ID is required');
+    }
+
+    try {
+      // Generate a generic response from the AI
+      // TODO: Add a new method in ChatService for this if needed,
+      // or adapt generateAIResponse if possible. For now, let's assume
+      // we might need a generic trigger method.
+      // Placeholder: Using existing method structure but with a generic prompt initiator.
+      // This might need adjustment in ChatService.
+      const aiResponse = await this.chatService.generateAIResponse(
+         'system', // Indicate it's a system/button trigger
+         'Please provide some guidance, Guru.', // Generic prompt
+       );
+
+      // Send the AI response to the specified channel
+      await this.chatService.sendAIMessage(channelId, aiResponse);
+
+      console.log(`Guru response sent to channel: ${channelId}`);
+      return res.status(200).send({ message: 'Guru response triggered successfully' });
+
+    } catch (error) {
+      console.error(`Error triggering Guru response for channel ${channelId}:`, error);
+      return res.status(500).send('Error triggering Guru response');
     }
   }
 }
