@@ -26,8 +26,8 @@ export class Conversation {
   @Column('text')
   text: string;
 
-  @Column('json')
-  analysis: any;
+  @Column('json', { nullable: true })
+  analysis: any | null;
 
   @Column({
     type: 'enum',

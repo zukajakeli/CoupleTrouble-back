@@ -36,7 +36,7 @@ export class ConversationController {
 
   @Get()
   getByUser(@User() user: UserEntity) {
-    return this.conversationService.getConversationByUser(user.id.toString());
+    return this.conversationService.getConversationsByUser(user.id.toString());
   }
 
   @Post()
@@ -51,7 +51,7 @@ export class ConversationController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.conversationService.findOne(+id);
+    return this.conversationService.findOne(id);
   }
 
   @Patch(':id')
