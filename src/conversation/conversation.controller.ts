@@ -22,6 +22,11 @@ import { JwtAuthGuard } from 'src/auth/guards/auth.guard';
 export class ConversationController {
   constructor(private readonly conversationService: ConversationService) {}
 
+  @Get('/dashboard')
+  getDashboardData(@User() user: UserEntity) {
+    return this.conversationService.getDashboardData(user.id.toString());
+  }
+
   @Post('/analyze')
   send(
     @User() user: UserEntity,

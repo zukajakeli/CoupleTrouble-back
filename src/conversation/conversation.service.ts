@@ -12,19 +12,23 @@ import { User } from 'src/user/entities/user.entity';
 
 @Injectable()
 export class ConversationService {
+  public GEMINI_API_KEY: string;
+  public genAI: GoogleGenerativeAI;
+  public aiModel: any;
+
   constructor(
     @InjectRepository(Conversation)
     private conversationRepository: Repository<Conversation>,
 
     @InjectRepository(User)
     private userRepository: Repository<User>,
-  ) {}
+  ) {
+    this.GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? '';
+    this.genAI = new GoogleGenerativeAI(this.GEMINI_API_KEY);
+    this.aiModel = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  }
 
   async sendToAI(inputText: string) {
-    const GEMINI_API_KEY = 'AIzaSyBLp1Lx9WYee8348t2Wf9YUdG0P6v27eHA';
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-
     const prompt = `
     You are an AI assistant analyzing a conversation between two partners. Your goal is to assess their communication style, emotions, and relationship dynamics in detail. Based on the provided conversation transcript, return a structured JSON object containing:
 
@@ -41,8 +45,8 @@ export class ConversationService {
    - Escalation level (low, medium, high).
    - A short explanation of how the conflict developed and whether it was resolved.
 5. **Key Topics**: Identify recurring themes in the conversation with a brief description of why they are important.
-6. **Attachment Styles**: Predict each partner’s attachment style (Secure, Anxious, Avoidant) and provide a brief explanation for the classification.
-7. **Love Language Detection**: Determine each partner’s primary love languages (Words of Affirmation, Acts of Service, Physical Touch, Quality Time, Gifts) and describe how they express or lack these in the conversation.
+6. **Attachment Styles**: Predict each partner's attachment style (Secure, Anxious, Avoidant) and provide a brief explanation for the classification.
+7. **Love Language Detection**: Determine each partner's primary love languages (Words of Affirmation, Acts of Service, Physical Touch, Quality Time, Gifts) and describe how they express or lack these in the conversation.
 8. **Toxicity Score**: A score between 0 and 1 representing the level of toxic communication (0 being no toxicity, 1 being highly toxic) with an explanation of any harmful behaviors observed.
 9. **AI Recommendations**: Provide two or more **detailed** suggestions on improving communication and emotional connection, with explanations tailored to this specific conversation.
 
@@ -74,7 +78,7 @@ Return only a properly formatted JSON object, without any extra text or explanat
     tone_intensity: string;
     description: string;
   };
-  'Key Topics': {
+  'key_topics': {
     importance: string;
     themes: string[];,
   },
@@ -100,12 +104,7 @@ Return only a properly formatted JSON object, without any extra text or explanat
     resolution_score: string;
     conflict_description: string;
   };
-  emotional_regulation: {
-    partner_1_regulation: string;
-    partner_2_regulation: string;
-    description: string;
-  };
-  Emotional Mapping: {
+  emotional_mapping: {
     partner_1: {
       description: string;
       emotions: any[]; 
@@ -115,7 +114,7 @@ Return only a properly formatted JSON object, without any extra text or explanat
       emotions: any[]; 
     };
   };
-  Attachment Styles: {
+  attachment_styles: {
     partner_1: {
       style: string;
       explanation: string;
@@ -125,7 +124,7 @@ Return only a properly formatted JSON object, without any extra text or explanat
       explanation: string;
     };
   };
-  Communication Patterns: {
+  communication_patterns: {
     average_response_time: string;
     description: string;
     interruptions: {
@@ -137,16 +136,7 @@ Return only a properly formatted JSON object, without any extra text or explanat
       partner_2: number;
     };
   };
-  Love Language Detection: {
-    partner_1: {
-      description: string;
-      languages: any[]; 
-    };
-    partner_2: {
-      description: string;
-      languages: any[]; 
-    };
-  };
+
   stress_indicators: {
     stress_level_partner_1: string;
     stress_level_partner_2: string;
@@ -163,6 +153,7 @@ Return only a properly formatted JSON object, without any extra text or explanat
     };
   };
   compatibility_index: number;
+  toxicity_score: number;
   recommendations: {
     title: string;
     description: string;
@@ -170,14 +161,17 @@ Return only a properly formatted JSON object, without any extra text or explanat
 }
     `;
 
-    // const prompt =
-    //   'Pretend you are a realtionship guru, you should analyze the conversation and help the couple improve their relationship. You should be spiritual, emotional and precise';
+    const res = await this.aiModel.generateContent(prompt + inputText);
 
-    const res = await model.generateContent(prompt + inputText);
+    function cleanJsonString(str: string): string {
+      return str
+        .replace(/`/g, '') // Remove all backtick characters
+        .replace(/json/gi, ''); // Remove all instances of "json" (case insensitive)
+    }
 
-    console.log({ res: res.response.text() });
+    const cleanedResponse = cleanJsonString(res.response.text());
 
-    return res.response.text();
+    return cleanedResponse;
   }
 
   async analyzeConversation(
@@ -253,5 +247,48 @@ Return only a properly formatted JSON object, without any extra text or explanat
 
     // Delete the conversation
     await this.conversationRepository.delete(id);
+  }
+
+  async getDashboardData(userId: string): Promise<{ lovePoints: number }> {
+    const conversations = await this.conversationRepository.find({
+      where: { userId },
+    });
+    if (!conversations || conversations.length === 0) {
+      throw new NotFoundException(`No conversations found for user ${userId}`);
+    }
+    const allAnalysis = conversations.map(
+      (conversation) => conversation.analysis,
+    );
+
+    const prompt = `
+    you are relationship guru. Based on this conversation analysis of a couple, generate a love points score between 0 and 100, where 0 is the worst and 100 is the best. Also write down couple goals for the couple.
+    This is conversations analysis of one couple, so considering all of the analysis together, generate a love points score and couple goals.
+    return JSON object like this:
+    {
+      lovePoints: number,
+      coupleGoals: string[]
+    }
+    `;
+
+    const res = await this.aiModel.generateContent(
+      prompt + allAnalysis.toString(),
+    );
+
+    console.log('res', res.response.text());
+
+    // Mock data for now
+    const mockLovePoints = 82; // Example value
+
+    return Promise.resolve({
+      lovePoints: mockLovePoints,
+      coupleGoals: [
+        "Improve active listening skills and empathetic responses.  Focus on understanding each other's perspectives without interrupting.",
+        'Develop clear communication protocols for logistical and work-related issues, using shared calendars or to-do lists.',
+        'Schedule regular dedicated time for intimacy and connection, separate from work discussions. Prioritize quality time and physical affection.',
+        "Address and validate each other's emotional insecurities openly and honestly.  Create a safe space to express vulnerability without fear of judgment.",
+        "Learn to de-escalate conflicts effectively. Practice using 'I' statements and focusing on resolving issues rather than assigning blame.",
+        'Consider couples counseling to address underlying communication patterns and improve conflict-resolution strategies, particularly given the higher stress levels and unresolved conflicts.',
+      ],
+    });
   }
 }

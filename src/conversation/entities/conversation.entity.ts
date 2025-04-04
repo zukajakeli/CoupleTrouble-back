@@ -29,6 +29,9 @@ export class Conversation {
   @Column('json', { nullable: true })
   analysis: any | null;
 
+  @Column({ nullable: true })
+  lovePoints?: number;
+
   @Column({
     type: 'enum',
     enum: ConversationSource,
