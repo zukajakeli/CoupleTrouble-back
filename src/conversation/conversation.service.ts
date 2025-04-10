@@ -84,7 +84,6 @@ export class ConversationService {
   }
 
   async getConversationsByUser(userId: string) {
-    console.log('userId', userId);
     const conversations = await this.conversationRepository.find({
       where: { userId },
     });
@@ -154,8 +153,6 @@ export class ConversationService {
     const res = await this.aiModel.generateContent(
       prompt + allAnalysis.toString(),
     );
-
-    console.log('res', res.response.text());
 
     // Mock data for now
     const mockLovePoints = 82; // Example value

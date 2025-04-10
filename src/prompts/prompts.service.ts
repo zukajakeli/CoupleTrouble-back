@@ -41,23 +41,15 @@ export class PromptsService {
     return this.promptRepository.save(prompt);
   }
 
-  /**
-   * Finds the latest prompt for each category, or only for a specific category if provided.
-   * @param category Optional category to filter by.
-   * @returns An array containing the latest prompt for each category, or a single latest prompt if a category is specified (or null if none found for that category).
-   */
   async findLatestGroupedByCategory(
     category?: PromptCategory,
   ): Promise<Prompt[] | Prompt | null> {
     if (category) {
-      // If a category is provided, find the latest prompt for that specific category
       return this.promptRepository.findOne({
         where: { category },
         order: { createdAt: 'DESC' },
       });
-      // findOne returns the entity or null if not found, matching the Promise<... | null> part
     } else {
-      // If no category is provided, find the latest for each category (existing logic)
       const allPrompts = await this.promptRepository.find({
         order: {
           createdAt: 'DESC',
@@ -73,27 +65,20 @@ export class PromptsService {
           foundCategories.add(prompt.category);
         }
       }
-      return latestPromptsArray; // Matches the Promise<Prompt[]> part
+      latestPromptsArray.sort((a, b) => a.category.localeCompare(b.category));
+      return latestPromptsArray;
     }
   }
 
-  /**
-   * Finds all prompts, grouped by category and sorted by date, or only for a specific category if provided.
-   * @param category Optional category to filter by.
-   * @returns A Record of categories to sorted prompt arrays, or a single sorted array if a category is specified.
-   */
   async findAllGroupedByCategorySortedByDate(
     category?: PromptCategory,
   ): Promise<Record<PromptCategory, Prompt[]> | Prompt[]> {
     if (category) {
-      // If category is provided, find and return only prompts for that category, sorted
       return this.promptRepository.find({
         where: { category },
-        order: { createdAt: 'ASC' }, // Sort oldest first for history
+        order: { createdAt: 'ASC' },
       });
-      // find returns Prompt[] directly, matching the Promise<... | Prompt[]> part
     } else {
-      // If no category provided, return history grouped by all categories (existing logic)
       const allPrompts = await this.promptRepository.find();
 
       const groupedPrompts: Record<PromptCategory, Prompt[]> = {} as Record<
@@ -116,7 +101,7 @@ export class PromptsService {
             a.createdAt.getTime() - b.createdAt.getTime(),
         );
       }
-      return groupedPrompts; // Matches the Promise<Record<...> | ...> part
+      return groupedPrompts;
     }
   }
 

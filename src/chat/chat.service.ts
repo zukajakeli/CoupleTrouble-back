@@ -38,7 +38,6 @@ export class ChatService implements OnModuleInit {
       );
 
     if (initialPromptData && initialPromptData instanceof Prompt) {
-      console.log('teeeext', initialPromptData.content);
       this.chatSession = this.aiModel.startChat({
         history: [
           {
@@ -88,9 +87,6 @@ export class ChatService implements OnModuleInit {
 
   async searchUsers(query: string, currentUserId: string) {
     try {
-      console.log('query', query);
-      console.log('currentUserId', currentUserId);
-
       const response = await this.chatClient.queryUsers(
         {
           id: { $ne: currentUserId }, // Exclude current user

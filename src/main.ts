@@ -22,7 +22,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:3000',
-      'https://couple-bubble-kxa2vopey-zukas-projects-a72057b1.vercel.app/',
+      'https://couple-bubble-kxa2vopey-zukas-projects-a72057b1.vercel.app',
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     allowedHeaders: ['Content-Type', 'Authorization'],
