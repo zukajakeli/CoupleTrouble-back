@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { PromptsService } from 'src/prompts/prompts.service';
 import { PromptCategory } from 'src/prompts/enums/prompt-category.enum';
+import { Prompt } from 'src/prompts/entities/prompt.entity';
 
 @Injectable()
 export class ConversationService {
@@ -35,9 +36,13 @@ export class ConversationService {
       PromptCategory.CONVERSATION_ANALYSIS,
     );
 
-    console.log('prompt', prompt);
+    if (!(prompt instanceof Prompt)) {
+      throw new NotFoundException(
+        `Prompt with category ${PromptCategory.CONVERSATION_ANALYSIS} not found`,
+      );
+    }
 
-    const res = await this.aiModel.generateContent(prompt + inputText);
+    const res = await this.aiModel.generateContent(prompt.content + inputText);
 
     function cleanJsonString(str: string): string {
       return str
