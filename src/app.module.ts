@@ -8,6 +8,7 @@ import { ChatModule } from './chat/chat.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { User } from './user/entities/user.entity';
+import { PromptsModule } from './prompts/prompts.module';
 
 @Module({
   imports: [
@@ -19,6 +20,9 @@ import { User } from './user/entities/user.entity';
       username: process.env.DB_USER,
       password: process.env.DB_PASS,
       database: process.env.DB_NAME,
+      ssl: {
+        rejectUnauthorized: false,
+      },
       autoLoadEntities: true,
       synchronize: true, // Disable this in production!
     }),
@@ -27,6 +31,7 @@ import { User } from './user/entities/user.entity';
     ChatModule,
     AuthModule,
     UserModule,
+    PromptsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

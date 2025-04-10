@@ -11,7 +11,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ChatService } from './chat.service';
-import { AiService } from './ai.service';
 import { ApiTags } from '@nestjs/swagger';
 import { User } from 'src/auth/guards/user.decorator';
 import { User as UserEntity } from 'src/user/entities/user.entity';
@@ -24,10 +23,7 @@ import { TriggerGuruDto } from './dto/trigger-guru.dto';
 @ApiTags('Chat')
 @Controller('chat')
 export class ChatController {
-  constructor(
-    private chatService: ChatService,
-    private aiService: AiService,
-  ) {}
+  constructor(private chatService: ChatService) {}
 
   @UseGuards(JwtAuthGuard)
   @Post('create-ai-user')
@@ -76,19 +72,19 @@ export class ChatController {
     }
 
     try {
-      // Verify webhook signature
       const isValid = await this.chatService.verifyWebhook(
         JSON.stringify(body),
         signature,
       );
-      // if (!isValid) return { status: 'unauthorized' };
 
-      // Extract message details
       const { type, message, channel_id } = body;
       if (type !== 'message.new' || message?.user?.id === 'ai_agent') {
-         console.log(`Webhook received, but not processing message type: ${type} from user: ${message?.user?.id}`);
-         // Still return 200 OK to acknowledge webhook receipt
-         return res.status(200).send('Webhook acknowledged, no AI action needed.');
+        console.log(
+          `Webhook received, but not processing message type: ${type} from user: ${message?.user?.id}`,
+        );
+        return res
+          .status(200)
+          .send('Webhook acknowledged, no AI action needed.');
       }
 
       // const channelId = body.channel_id;
@@ -112,9 +108,12 @@ export class ChatController {
       // --- END DISABLED AI RESPONSE ---
 
       // Acknowledge webhook receipt without triggering AI
-      console.log(`Webhook processed for message from ${userName} in channel ${channel_id}, AI not triggered.`);
-      return res.status(200).send('Webhook processed, AI response not triggered automatically.');
-
+      console.log(
+        `Webhook processed for message from ${userName} in channel ${channel_id}, AI not triggered.`,
+      );
+      return res
+        .status(200)
+        .send('Webhook processed, AI response not triggered automatically.');
     } catch (error) {
       console.error('Webhook processing error:', error);
       return res.status(500).send('Error processing webhook');
@@ -143,18 +142,22 @@ export class ChatController {
       // Placeholder: Using existing method structure but with a generic prompt initiator.
       // This might need adjustment in ChatService.
       const aiResponse = await this.chatService.generateAIResponse(
-         'system', // Indicate it's a system/button trigger
-         'Please provide some guidance, Guru.', // Generic prompt
-       );
+        'system', // Indicate it's a system/button trigger
+        'Please provide some guidance, Guru.', // Generic prompt
+      );
 
       // Send the AI response to the specified channel
       await this.chatService.sendAIMessage(channelId, aiResponse);
 
       console.log(`Guru response sent to channel: ${channelId}`);
-      return res.status(200).send({ message: 'Guru response triggered successfully' });
-
+      return res
+        .status(200)
+        .send({ message: 'Guru response triggered successfully' });
     } catch (error) {
-      console.error(`Error triggering Guru response for channel ${channelId}:`, error);
+      console.error(
+        `Error triggering Guru response for channel ${channelId}:`,
+        error,
+      );
       return res.status(500).send('Error triggering Guru response');
     }
   }
