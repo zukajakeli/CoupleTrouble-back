@@ -38,6 +38,7 @@ export class ChatService implements OnModuleInit {
       );
 
     if (initialPromptData && initialPromptData instanceof Prompt) {
+      console.log('teeeext', initialPromptData.content);
       this.chatSession = this.aiModel.startChat({
         history: [
           {
