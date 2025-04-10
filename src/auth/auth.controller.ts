@@ -34,10 +34,11 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
-    const user = await this.authService.validateUser(
-      loginDto.email,
-      loginDto.password,
-    );
+    const { email, password } = loginDto;
+    if (!email || !password) {
+      throw new UnauthorizedException('Email and password are required');
+    }
+    const user = await this.authService.validateUser(email, password);
 
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');

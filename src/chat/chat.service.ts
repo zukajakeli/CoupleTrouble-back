@@ -1,49 +1,62 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { StreamChat } from 'stream-chat';
 import {
   GenerativeModel,
   GoogleGenerativeAI,
   ChatSession,
 } from '@google/generative-ai';
+import { PromptsService } from 'src/prompts/prompts.service';
+import { PromptCategory } from 'src/prompts/enums/prompt-category.enum';
+import { Prompt } from 'src/prompts/entities/prompt.entity';
 
 @Injectable()
-export class ChatService {
+export class ChatService implements OnModuleInit {
   public chatClient: StreamChat;
   public genAI: GoogleGenerativeAI;
   public aiModel: GenerativeModel;
   private chatSession: ChatSession;
 
-  constructor() {
+  constructor(private readonly promptService: PromptsService) {
     const apiKey = process.env.STREAM_API_KEY;
     const apiSecret = process.env.STREAM_API_SECRET;
     const genAIKey = process.env.GEMINI_API_KEY;
 
     if (!apiKey || !apiSecret || !genAIKey) {
-      throw new Error('Stream API credentials not found');
+      throw new Error('Stream API or Gemini API credentials not found');
     }
 
     this.chatClient = StreamChat.getInstance(apiKey, apiSecret);
     this.genAI = new GoogleGenerativeAI(genAIKey);
-    this.aiModel = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-    this.chatSession = this.aiModel.startChat({
-      history: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: 'You are in a group chat with 2 other people, who are couple. Pretend you are the couples relationship guru. Be very professional, but also very kind and warm, really try to help the couple. Provide spiritual and practical answers.',
-            },
-          ],
-        },
-      ],
-    });
+    this.aiModel = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  }
+
+  async onModuleInit() {
+    console.log('ChatService initializing...');
+    const initialPromptData =
+      await this.promptService.findLatestGroupedByCategory(
+        PromptCategory.CHAT_GURU,
+      );
+
+    if (initialPromptData && initialPromptData instanceof Prompt) {
+      this.chatSession = this.aiModel.startChat({
+        history: [
+          {
+            role: 'user',
+            parts: [{ text: initialPromptData.content }],
+          },
+        ],
+      });
+    }
+
+    await this.createAIUser();
+    console.log('ChatService initialized successfully.');
   }
 
   getStreamClient(): StreamChat {
     return this.chatClient;
   }
 
-  async createToken(userId: string): Promise<string> {
+  createToken(userId: string): string {
     return this.chatClient.createToken(userId);
   }
 
@@ -107,10 +120,7 @@ export class ChatService {
     }
   }
 
-  async verifyWebhook(
-    payload: string | Buffer,
-    signature: string,
-  ): Promise<boolean> {
+  verifyWebhook(payload: string | Buffer, signature: string): boolean {
     return this.chatClient.verifyWebhook(payload, signature);
   }
 
@@ -118,11 +128,7 @@ export class ChatService {
     userName: string,
     userMessage: string,
   ): Promise<string> {
-    const prompt =
-      'You are in a group chat with 2 other people, who are couple. Pretend you are the couples relationship guru. Be very professional, but also very kind and warm, really try to help the couple. : ';
-
     try {
-      // const res = await this.aiModel.generateContent(prompt + userMessage);
       const res = await this.chatSession.sendMessage(
         `${userName}:${userMessage}`,
       );
@@ -135,14 +141,15 @@ export class ChatService {
   }
 
   async createAIUser() {
-    await this.chatClient.upsertUser({
-      id: 'ai_agent',
-      name: 'Guru',
-      role: 'admin',
-    });
-  }
-
-  onModuleInit() {
-    this.createAIUser(); // Register AI Agent when the module loads
+    try {
+      await this.chatClient.upsertUser({
+        id: 'ai_agent',
+        name: 'Guru',
+        role: 'admin',
+      });
+      console.log('AI Agent user created/updated.');
+    } catch (error) {
+      console.error('Error creating/updating AI Agent user:', error);
+    }
   }
 }

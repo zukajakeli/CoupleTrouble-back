@@ -11,6 +11,7 @@ import { User } from 'src/user/entities/user.entity';
 import { ChatService } from 'src/chat/chat.service';
 import { ChatModule } from 'src/chat/chat.module';
 import { LocalStrategy } from './local.strategy';
+import { PromptsModule } from 'src/prompts/prompts.module';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ dotenv.config();
       signOptions: { expiresIn: '1h' },
     }),
     ChatModule,
+    PromptsModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, ChatService, LocalStrategy],
