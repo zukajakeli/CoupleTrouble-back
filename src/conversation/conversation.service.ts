@@ -31,7 +31,7 @@ export class ConversationService {
   }
 
   async sendToAI(inputText: string) {
-    const prompt = this.promptsService.findLatestGroupedByCategory(
+    const prompt = await this.promptsService.findLatestGroupedByCategory(
       PromptCategory.CONVERSATION_ANALYSIS,
     );
 
