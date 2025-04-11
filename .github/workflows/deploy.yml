@@ -1,0 +1,36 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main 
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18.20.8' 
+
+      - name: Install dependencies and build
+        run: |
+          npm install
+          npm run build
+
+      - name: SSH into EC2 and deploy
+        run: |
+          ssh -i /Users/zukajayeli/Documents/AWS/zukas-mac-rsa-to-aws.pem ec2-user@18.234.191.35 << 'EOF'
+            cd /path/to/your/app
+            git pull origin main
+            npm install
+            npm run build
+            pm2 restart dist/main.js
+          EOF
+        env:
+          EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }} 
